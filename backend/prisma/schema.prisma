@@ -245,9 +245,9 @@ model Tryout {
 
 model TryoutQuestion {
   id          String         @id @default(cuid())
-  prompt      String
+  prompt      String         @db.LongText
   imageUrl    String?
-  explanation String?
+  explanation String?        @db.LongText
   order       Int
   tryoutId    String
   tryout      Tryout         @relation(fields: [tryoutId], references: [id])
@@ -350,9 +350,9 @@ model PracticeSet {
 
 model PracticeQuestion {
   id          String           @id @default(cuid())
-  prompt      String
+  prompt      String           @db.LongText
   imageUrl    String?
-  explanation String?
+  explanation String?          @db.LongText
   order       Int
   setId       String
   set         PracticeSet      @relation(fields: [setId], references: [id])
