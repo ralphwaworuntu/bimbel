@@ -73,6 +73,7 @@ export function CermatPage() {
   const autoSubmitRef = useRef<string>('');
   const answersRef = useRef<Record<number, string | null>>({});
   const timerRef = useRef<number | null>(null);
+  const endTimeRef = useRef<number | null>(null);
 
   const { request: requestFullscreen, exit: exitFullscreen, setViolationHandler, isSupported: fullscreenSupported } = useFullscreenExam({
     active: Boolean(session),
@@ -111,6 +112,7 @@ export function CermatPage() {
         setBreakLeft(0);
         setIsBreaking(false);
         setPendingNext(null);
+        endTimeRef.current = null;
         exitFullscreen();
         return;
       }
@@ -121,6 +123,7 @@ export function CermatPage() {
         setPendingNext(payload.nextSession);
         setBreakLeft(payload.nextSession.breakSeconds ?? 5);
         setIsBreaking(true);
+        endTimeRef.current = null;
       }
     },
     onError: () => toast.error('Gagal mengirim jawaban'),
@@ -179,8 +182,10 @@ export function CermatPage() {
       return undefined;
     }
     timerRef.current = window.setInterval(() => {
-      setTimeLeft((prev) => (prev <= 1 ? 0 : prev - 1));
-    }, 1000);
+      if (!endTimeRef.current) return;
+      const next = Math.max(0, Math.ceil((endTimeRef.current - Date.now()) / 1000));
+      setTimeLeft(next);
+    }, 250);
     return () => {
       if (timerRef.current !== null) {
         window.clearInterval(timerRef.current);
@@ -213,6 +218,7 @@ export function CermatPage() {
       setPendingNext(null);
       setAnswers({});
       setCurrentIndex(0);
+      endTimeRef.current = Date.now() + (pendingNext.timerSeconds ?? 60) * 1000;
       setTimeLeft(pendingNext.timerSeconds ?? 60);
       setIsBreaking(false);
     }, 0);
@@ -233,6 +239,7 @@ export function CermatPage() {
       setIsBreaking(false);
       setPendingNext(null);
       setPendingSession(null);
+      endTimeRef.current = null;
       exitFullscreen();
     },
     [exitFullscreen],
@@ -435,6 +442,7 @@ export function CermatPage() {
           setAnswers({});
           setResult(null);
           setCurrentIndex(0);
+          endTimeRef.current = Date.now() + (pendingSession.timerSeconds ?? 60) * 1000;
           setTimeLeft(pendingSession.timerSeconds ?? 60);
           setBreakLeft(0);
           setIsBreaking(false);
