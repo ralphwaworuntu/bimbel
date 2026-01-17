@@ -135,7 +135,10 @@ export function CermatPage() {
       setCountdownToken((prev) => prev + 1);
       setCountdownOpen(true);
     },
-    onError: () => toast.error('Gagal memulai sesi'),
+    onError: () => {
+      toast.error('Gagal memulai sesi');
+      exitFullscreen();
+    },
     onSettled: () => setPendingMode(null),
   });
 
@@ -262,7 +265,20 @@ export function CermatPage() {
             <h2 className="text-3xl font-bold text-slate-900">{variant.title}</h2>
             <p className="mt-2 text-slate-600">{variant.description}</p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <Button onClick={() => startMutation.mutate(variant.mode)} disabled={startMutation.isPending}>
+              <Button
+                onClick={async () => {
+                  if (fullscreenSupported) {
+                    try {
+                      await requestFullscreen();
+                    } catch {
+                      toast.error('Izinkan mode layar penuh untuk mulai tes.');
+                      return;
+                    }
+                  }
+                  startMutation.mutate(variant.mode);
+                }}
+                disabled={startMutation.isPending}
+              >
                 {isLoading ? 'Menyiapkan...' : MODE_LABELS[variant.mode].button}
               </Button>
             </div>
@@ -392,20 +408,10 @@ export function CermatPage() {
         title="Mulai Tes Kecermatan"
         subtitle="Fokus dan pastikan koneksi stabil."
         warning="Tes akan dihentikan jika Anda berpindah tab atau meninggalkan halaman."
-        onComplete={async () => {
+        onComplete={() => {
           if (!pendingSession) {
             setCountdownOpen(false);
             return;
-          }
-          if (fullscreenSupported) {
-            try {
-              await requestFullscreen();
-            } catch {
-              toast.error('Izinkan mode layar penuh untuk mulai tes.');
-              setCountdownOpen(false);
-              setPendingSession(null);
-              return;
-            }
           }
           setSession(pendingSession);
           setAnswers({});
@@ -421,6 +427,7 @@ export function CermatPage() {
         onCancel={() => {
           setCountdownOpen(false);
           setPendingSession(null);
+          exitFullscreen();
         }}
       />
 
