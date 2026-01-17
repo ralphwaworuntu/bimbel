@@ -266,14 +266,16 @@ export function CermatPage() {
             <p className="mt-2 text-slate-600">{variant.description}</p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <Button
-                onClick={async () => {
+                onClick={() => {
                   if (fullscreenSupported) {
-                    try {
-                      await requestFullscreen();
-                    } catch {
-                      toast.error('Izinkan mode layar penuh untuk mulai tes.');
-                      return;
-                    }
+                    requestFullscreen()
+                      .then(() => {
+                        startMutation.mutate(variant.mode);
+                      })
+                      .catch(() => {
+                        toast.error('Izinkan mode layar penuh untuk mulai tes.');
+                      });
+                    return;
                   }
                   startMutation.mutate(variant.mode);
                 }}
