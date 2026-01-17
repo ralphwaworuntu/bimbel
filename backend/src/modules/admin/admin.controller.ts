@@ -814,7 +814,13 @@ export async function updateTryoutController(req: Request, res: Response, next: 
 export async function deleteTryoutController(req: Request, res: Response, next: NextFunction) {
   try {
     const id = getIdParam(req);
-    await prisma.tryout.delete({ where: { id } });
+    await prisma.$transaction([
+      prisma.tryoutAnswer.deleteMany({ where: { question: { tryoutId: id } } }),
+      prisma.tryoutResult.deleteMany({ where: { tryoutId: id } }),
+      prisma.tryoutOption.deleteMany({ where: { question: { tryoutId: id } } }),
+      prisma.tryoutQuestion.deleteMany({ where: { tryoutId: id } }),
+      prisma.tryout.delete({ where: { id } }),
+    ]);
     res.status(204).send();
   } catch (error) {
     next(error);
