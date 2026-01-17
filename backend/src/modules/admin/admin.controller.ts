@@ -73,6 +73,7 @@ function withOrigin(req: Request, path: string | null) {
 }
 
 const siteContactKeys = ['company_email', 'whatsapp_primary', 'whatsapp_consult', 'company_address'] as const;
+const memberBackgroundKeys = ['member_area_background_enabled', 'member_area_background_image'] as const;
 const cermatConfigKeys = ['cermat_question_count', 'cermat_duration_seconds', 'cermat_total_sessions', 'cermat_break_seconds'] as const;
 type WelcomeModalItem = { id: string; imageUrl: string; linkUrl?: string | null; enabled: boolean; createdAt: string };
 
@@ -87,6 +88,17 @@ function buildContactConfig(settings: Array<{ key: string; value: string }>) {
     whatsappPrimary,
     whatsappConsult: map.whatsapp_consult ?? whatsappPrimary,
     companyAddress: map.company_address ?? 'Alamat perusahaan belum diatur',
+  };
+}
+
+function buildMemberBackgroundConfig(settings: Array<{ key: string; value: string }>) {
+  const map = settings.reduce<Record<string, string>>((acc, setting) => {
+    acc[setting.key] = setting.value;
+    return acc;
+  }, {});
+  return {
+    enabled: map.member_area_background_enabled === 'true',
+    imageUrl: map.member_area_background_image || null,
   };
 }
 
@@ -1671,6 +1683,45 @@ export async function updateContactConfigAdminController(req: Request, res: Resp
     ]);
 
     res.json({ status: 'success', data: { email, whatsappPrimary, whatsappConsult, companyAddress } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getMemberBackgroundAdminController(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const settings = await prisma.siteSetting.findMany({ where: { key: { in: [...memberBackgroundKeys] } } });
+    res.json({ status: 'success', data: buildMemberBackgroundConfig(settings) });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateMemberBackgroundAdminController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const payload = req.body as { enabled?: boolean; removeImage?: boolean };
+    const imageFile = getFile(req, 'image');
+    const removeImage = payload.removeImage !== undefined ? String(payload.removeImage) === 'true' || payload.removeImage === true : false;
+    const enabled = payload.enabled !== undefined ? String(payload.enabled) === 'true' || payload.enabled === true : false;
+
+    const settings = await prisma.siteSetting.findMany({ where: { key: { in: [...memberBackgroundKeys] } } });
+    const current = buildMemberBackgroundConfig(settings);
+    const nextImageUrl = removeImage ? null : imageFile ? buildPublicUploadPath(imageFile.path) : current.imageUrl;
+
+    await prisma.$transaction([
+      prisma.siteSetting.upsert({
+        where: { key: 'member_area_background_enabled' },
+        update: { value: String(enabled) },
+        create: { key: 'member_area_background_enabled', value: String(enabled) },
+      }),
+      prisma.siteSetting.upsert({
+        where: { key: 'member_area_background_image' },
+        update: { value: nextImageUrl ?? '' },
+        create: { key: 'member_area_background_image', value: nextImageUrl ?? '' },
+      }),
+    ]);
+
+    res.json({ status: 'success', data: { enabled, imageUrl: nextImageUrl } });
   } catch (error) {
     next(error);
   }

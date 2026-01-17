@@ -5,6 +5,7 @@ import {
   getDashboardOverview,
   getFaqs,
   getNews,
+  getMemberBackgroundConfig,
   getWelcomeModalConfig,
   submitCalculator,
 } from './dashboard.service';
@@ -49,6 +50,15 @@ export async function newsController(_req: Request, res: Response, next: NextFun
 export async function welcomeModalController(_req: Request, res: Response, next: NextFunction) {
   try {
     const data = await getWelcomeModalConfig();
+    res.json({ status: 'success', data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function memberBackgroundController(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await getMemberBackgroundConfig();
     res.json({ status: 'success', data });
   } catch (error) {
     next(error);

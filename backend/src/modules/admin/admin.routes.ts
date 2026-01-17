@@ -84,6 +84,7 @@ import {
   updatePaymentSettingAdminController,
   getHeroImageController,
   getContactConfigAdminController,
+  getMemberBackgroundAdminController,
   listWelcomeModalAdminController,
   getExamControlAdminController,
   updateExamControlAdminController,
@@ -96,6 +97,7 @@ import {
   grantTryoutQuotaAdminController,
   regenerateExamBlockAdminController,
   updateContactConfigAdminController,
+  updateMemberBackgroundAdminController,
   updateWelcomeModalAdminController,
   deleteWelcomeModalAdminController,
   updateCermatConfigAdminController,
@@ -368,6 +370,13 @@ adminRouter.get('/payment-setting', getPaymentSettingAdminController);
 adminRouter.put('/payment-setting', validateResource(paymentSettingSchema), updatePaymentSettingAdminController);
 adminRouter.get('/site/contact-config', getContactConfigAdminController);
 adminRouter.put('/site/contact-config', validateResource(contactConfigSchema), updateContactConfigAdminController);
+adminRouter.get('/site/member-background', getMemberBackgroundAdminController);
+adminRouter.put(
+  '/site/member-background',
+  contentImageUpload.single('image'),
+  optimizeUploadedImages,
+  updateMemberBackgroundAdminController,
+);
 adminRouter.get('/site/exam-control', getExamControlAdminController);
 adminRouter.put('/site/exam-control', validateResource(examControlSchema), updateExamControlAdminController);
 adminRouter.get('/site/welcome-modal', listWelcomeModalAdminController);

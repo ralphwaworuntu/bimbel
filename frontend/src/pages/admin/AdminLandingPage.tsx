@@ -28,6 +28,7 @@ type LandingAnnouncement = {
 };
 type LandingFaq = { id: string; question: string; answer: string; order: number };
 type LandingNews = { id: string; title: string; slug: string; excerpt: string; content: string; coverUrl?: string; kind: 'NEWS' | 'INSIGHT' };
+type MemberAreaBackground = { enabled: boolean; imageUrl?: string | null };
 
 type HeroSlide = { id: string; imageUrl: string; order: number };
 type MemberOverviewSlide = {
@@ -219,6 +220,36 @@ export function AdminLandingPage() {
   const onSubmitContact = contactForm.handleSubmit((values) => saveContact.mutate(values));
   const onSubmitMemberSlide = memberSlideForm.handleSubmit((values) => createMemberSlide.mutate(values));
 
+  const [memberBackgroundFile, setMemberBackgroundFile] = useState<File | null>(null);
+  const [memberBackgroundEnabled, setMemberBackgroundEnabled] = useState(true);
+  const { data: memberBackground } = useQuery({
+    queryKey: ['admin-member-background'],
+    queryFn: () => apiGet<MemberAreaBackground>('/admin/site/member-background'),
+  });
+  useEffect(() => {
+    if (memberBackground) {
+      setMemberBackgroundEnabled(memberBackground.enabled);
+    }
+  }, [memberBackground]);
+  const saveMemberBackground = useMutation({
+    mutationFn: (payload: FormData) => apiPut('/admin/site/member-background', payload),
+    onSuccess: () => {
+      toast.success('Background member area diperbarui');
+      queryClient.invalidateQueries({ queryKey: ['admin-member-background'] });
+      setMemberBackgroundFile(null);
+    },
+    onError: () => toast.error('Gagal memperbarui background member area'),
+  });
+  const onSubmitMemberBackground = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData();
+    formData.append('enabled', String(memberBackgroundEnabled));
+    if (memberBackgroundFile) {
+      formData.append('image', memberBackgroundFile);
+    }
+    saveMemberBackground.mutate(formData);
+  };
+
   const welcomeForm = useForm<{ enabled: boolean; linkUrl: string }>({
     defaultValues: { enabled: true, linkUrl: '' },
   });
@@ -311,6 +342,58 @@ export function AdminLandingPage() {
             <div className="md:col-span-3">
               <Button type="submit" disabled={saveContact.isPending}>
                 {saveContact.isPending ? 'Menyimpan...' : 'Simpan Kontak'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-4 p-6">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-slate-500">Background Member Area</p>
+            <h3 className="text-xl font-semibold text-slate-900">Atur tampilan belakang dashboard member</h3>
+            <p className="text-xs text-slate-500">Gunakan gambar untuk memperkuat branding pada area member.</p>
+          </div>
+          <form className="grid gap-3 md:grid-cols-2" onSubmit={onSubmitMemberBackground}>
+            <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+              <input
+                type="checkbox"
+                checked={memberBackgroundEnabled}
+                onChange={(event) => setMemberBackgroundEnabled(event.target.checked)}
+              />
+              Aktifkan background member area
+            </label>
+            <div className="md:col-span-2 space-y-2">
+              {memberBackground?.imageUrl && (
+                <div className="rounded-2xl border border-slate-200 p-2">
+                  <p className="text-xs font-semibold text-slate-500">Preview saat ini</p>
+                  <img
+                    src={getAssetUrl(memberBackground.imageUrl)}
+                    alt="Background member area"
+                    className="mt-2 h-40 w-full rounded-2xl object-cover"
+                  />
+                </div>
+              )}
+              <Input type="file" accept="image/*" onChange={(event) => setMemberBackgroundFile(event.target.files?.[0] ?? null)} />
+              <p className="text-[11px] text-slate-500">Unggah gambar JPG/PNG/WEBP agar tampil sebagai background dashboard member.</p>
+            </div>
+            <div className="md:col-span-2 flex flex-wrap gap-3">
+              <Button type="submit" disabled={saveMemberBackground.isPending}>
+                {saveMemberBackground.isPending ? 'Menyimpan...' : 'Simpan Background'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  const formData = new FormData();
+                  formData.append('enabled', 'false');
+                  formData.append('removeImage', 'true');
+                  saveMemberBackground.mutate(formData);
+                }}
+                disabled={saveMemberBackground.isPending}
+              >
+                Hapus Background
               </Button>
             </div>
           </form>

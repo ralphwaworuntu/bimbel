@@ -107,6 +107,20 @@ export function getNews() {
   return prisma.newsArticle.findMany({ orderBy: { published: 'desc' } });
 }
 
+export async function getMemberBackgroundConfig() {
+  const settings = await prisma.siteSetting.findMany({
+    where: { key: { in: ['member_area_background_enabled', 'member_area_background_image'] } },
+  });
+  const map = settings.reduce<Record<string, string>>((acc, setting) => {
+    acc[setting.key] = setting.value;
+    return acc;
+  }, {});
+  return {
+    enabled: map.member_area_background_enabled === 'true',
+    imageUrl: map.member_area_background_image || null,
+  };
+}
+
 function parseWelcomeModalItems(settings: Array<{ key: string; value: string }>) {
   const itemsSetting = settings.find((s) => s.key === 'welcome_modal_items');
   if (!itemsSetting?.value) return [];
