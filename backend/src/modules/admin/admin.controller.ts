@@ -1220,7 +1220,13 @@ export async function updatePracticeSetController(req: Request, res: Response, n
 export async function deletePracticeSetController(req: Request, res: Response, next: NextFunction) {
   try {
     const id = getIdParam(req);
-    await prisma.practiceSet.delete({ where: { id } });
+    await prisma.$transaction([
+      prisma.practiceAnswer.deleteMany({ where: { question: { setId: id } } }),
+      prisma.practiceResult.deleteMany({ where: { setId: id } }),
+      prisma.practiceOption.deleteMany({ where: { question: { setId: id } } }),
+      prisma.practiceQuestion.deleteMany({ where: { setId: id } }),
+      prisma.practiceSet.delete({ where: { id } }),
+    ]);
     res.status(204).send();
   } catch (error) {
     next(error);
